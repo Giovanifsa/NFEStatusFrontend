@@ -1,0 +1,61 @@
+<div class="p-shadow-2 content-padding screen-centered card-borders">
+  <div class="p-d-flex p-flex-column">
+    <div class="p-mb-2 p-shadow-4 content-padding card-borders">
+      <h5>Filtros</h5>
+
+      <div class="p-fluid p-formgrid p-grid">
+        <div class="p-field p-col">
+          <label for="selectedAuthorizers">Autorizador</label>
+
+          <p-multiSelect 
+            inputId="selectedAuthorizers" 
+            [options]="authorizers" 
+            [(ngModel)]="selectedAuthorizers" 
+            defaultLabel="Selecione um Autorizador" 
+            optionLabel="authorizer"
+            [disabled]="checkMostUnavailables">
+
+          </p-multiSelect>
+        </div>
+
+        <div class="p-field p-col">
+          <label for="selectedCaptureMoment">Data de Consulta</label>
+
+          <p-calendar inputId="selectedCaptureMoment" [(ngModel)]="selectedCaptureMoment" [disabled]="checkMostUnavailables">
+
+          </p-calendar>
+        </div>
+
+        <div class="p-field-checkbox">
+          <p-checkbox [(ngModel)]="checkMostUnavailables" binary="true" inputId="checkMostUnavailables">
+
+          </p-checkbox>
+          
+          <label for="checkMostUnavailables">Maior indisponibilidade</label>
+        </div>
+      </div>
+
+      <p-table 
+        [value]="loadedNFEStatusSnapshots" 
+        [lazy]="true" 
+        (onLazyLoad)="paginationQuery($event)" 
+        [paginator]="true" 
+        [rows]="10" 
+        [totalRecords]="totalNFEStatusSnapshotsRecords" 
+        [loading]="isPaginationLoading">
+
+          <ng-template pTemplate="header">
+              <tr>
+                  <th>Autorizador</th>
+              </tr>
+          </ng-template>
+
+          <ng-template pTemplate="body" let-nfeStatusSnapshot>
+              <tr>
+                  <td>{{nfeStatusSnapshot.authorizer.authorizer}}</td>
+              </tr>
+          </ng-template>
+      </p-table>
+    </div>
+  </div>
+</div>
