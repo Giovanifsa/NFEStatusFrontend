@@ -1,7 +1,7 @@
-<div class="p-shadow-2 content-padding screen-centered card-borders">
+<div class="p-shadow-2 content-padding card-borders">
   <div class="p-d-flex p-flex-column">
     <div class="p-mb-2 p-shadow-4 content-padding card-borders">
-      <h5>Filtros</h5>
+      <h1>Consulta de Status de Disponibilidade NF-e</h1>
 
       <div class="p-fluid p-formgrid p-grid">
         <div class="p-field p-col">
@@ -13,7 +13,9 @@
             [(ngModel)]="selectedAuthorizers" 
             defaultLabel="Selecione um Autorizador" 
             optionLabel="authorizer"
-            [disabled]="checkMostUnavailables">
+            selectedItemsLabel="{0} Autorizador(es) selecionado(s)"
+            (onChange)="refreshTable()"
+            [disabled]="shouldDisableAllFields() || shouldDisplayMostUnavailableServicesTable()">
 
           </p-multiSelect>
         </div>
@@ -21,38 +23,113 @@
         <div class="p-field p-col">
           <label for="selectedCaptureMoment">Data de Consulta</label>
 
-          <p-calendar inputId="selectedCaptureMoment" [(ngModel)]="selectedCaptureMoment" [disabled]="checkMostUnavailables">
+          <p-calendar 
+            inputId="selectedCaptureMoment" 
+            dateFormat="dd/mm/yy" 
+            [(ngModel)]="selectedCaptureMoment"
+            (onBlur)="refreshTable()"
+            [disabled]="shouldDisableAllFields() || shouldDisplayMostUnavailableServicesTable()">
 
           </p-calendar>
         </div>
 
-        <div class="p-field-checkbox">
-          <p-checkbox [(ngModel)]="checkMostUnavailables" binary="true" inputId="checkMostUnavailables">
+        <div class="p-field p-col">
+          <label for="selectedMostUnavailableServices">Serviço com maior indisponibilidade</label>
 
-          </p-checkbox>
-          
-          <label for="checkMostUnavailables">Maior indisponibilidade</label>
+          <p-multiSelect 
+            inputId="selectedMostUnavailableServices" 
+            [options]="services" 
+            [(ngModel)]="selectedMostUnavailableServices" 
+            defaultLabel="Selecione um Serviço" 
+            optionLabel="serviceDescription"
+            selectedItemsLabel="{0} Serviço(s) selecionado(s)"
+            (onChange)="refreshTable()"
+            [disabled]="shouldDisableAllFields()">
+
+          </p-multiSelect>
+        </div>
+
+        <div class="p-field p-col">
+          <label for="selectedQueryOptions">Opções de consulta</label>
+
+          <p-multiSelect 
+            inputId="selectedQueryOptions" 
+            [options]="queryOptions" 
+            [(ngModel)]="selectedQueryOptions" 
+            defaultLabel="Selecione uma opção de consulta" 
+            optionLabel="optionLabel"
+            selectedItemsLabel="{0} Opção(es) selecionada(s)"
+            (onChange)="refreshTable()"
+            [disabled]="shouldDisableAllFields()">
+
+          </p-multiSelect>
         </div>
       </div>
 
       <p-table 
         [value]="loadedNFEStatusSnapshots" 
         [lazy]="true" 
-        (onLazyLoad)="paginationQuery($event)" 
+        (onLazyLoad)="queryByAuthorizersAndDatePaginated($event)" 
         [paginator]="true" 
         [rows]="10" 
         [totalRecords]="totalNFEStatusSnapshotsRecords" 
-        [loading]="isPaginationLoading">
+        [loading]="isPaginationLoading"
+        *ngIf="tableVisible && !shouldDisplayMostUnavailableServicesTable()">
+
+          <ng-template pTemplate="header">
+            <tr>
+                <th>Autorizador</th>
+                <th>Captura</th>
+                <th>Autorização4</th>
+                <th>Retorno Autorização4</th>
+                <th>Inutilização4</th>
+                <th>Consulta Protocolo4</th>
+                <th>Status Serviço4</th>
+                <th>Consulta Cadastro4</th>
+                <th>Recepção Evento4</th>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="body" let-nfeStatusSnapshot>
+            <tr>
+              <td>{{nfeStatusSnapshot.authorizer | enumAuthorizer}}</td>
+              <td>{{nfeStatusSnapshot.captureMoment | date: 'dd/MM/yyyy HH:mm:ss'}}</td>
+              <td>{{nfeStatusSnapshot.nfeStatusAuthorization4 | enumNFEStatus}}</td>
+              <td>{{nfeStatusSnapshot.nfeStatusAuthorization4Return | enumNFEStatus}}</td>
+              <td>{{nfeStatusSnapshot.nfeStatusInutilisation4 | enumNFEStatus}}</td>
+              <td>{{nfeStatusSnapshot.nfeStatusProtocol4Query | enumNFEStatus}}</td>
+              <td>{{nfeStatusSnapshot.nfeStatusService4Status | enumNFEStatus}}</td>
+              <td>{{nfeStatusSnapshot.nfeStatusRegister4Query | enumNFEStatus}}</td>
+              <td>{{nfeStatusSnapshot.nfeStatusEvent4Reception | enumNFEStatus}}</td>
+            </tr>
+          </ng-template>
+      </p-table>
+
+      <p-table 
+        [value]="loadedNFEStatusSnapshotMostUnavailables" 
+        [lazy]="true" 
+        (onLazyLoad)="queryByMostUnavailableServicesPaginated($event)" 
+        [paginator]="true" 
+        [rows]="10" 
+        [totalRecords]="totalNFEStatusSnapshotMostUnavailableRecords" 
+        [loading]="isPaginationLoading"
+        *ngIf="tableVisible && shouldDisplayMostUnavailableServicesTable()">
 
           <ng-template pTemplate="header">
               <tr>
                   <th>Autorizador</th>
+                  <th>Serviço</th>
+                  <th>Vezes indisponível</th>
+                  <th>Último momento indisponível</th>
               </tr>
           </ng-template>
 
           <ng-template pTemplate="body" let-nfeStatusSnapshot>
               <tr>
-                  <td>{{nfeStatusSnapshot.authorizer.authorizer}}</td>
+                  <td>{{nfeStatusSnapshot.authorizer | enumAuthorizer}}</td>
+                  <td>{{nfeStatusSnapshot.service | enumService}}</td>
+                  <td>{{nfeStatusSnapshot.unavailableCount}}</td>
+                  <td>{{nfeStatusSnapshot.lastUnavailableMoment | date: 'dd/MM/yyyy HH:mm:ss'}}</td>
               </tr>
           </ng-template>
       </p-table>

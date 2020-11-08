@@ -5,5 +5,5 @@ export default class NFEStatusSnapshotFilterDTO {
 	public rows: number;
 	public captureMoment: Date;
 	public authorizers: EnumAuthorizerDTO[];
-	public mostUnavailables: boolean;
+	public distinctByAuthorizerLatest: boolean;
 }
