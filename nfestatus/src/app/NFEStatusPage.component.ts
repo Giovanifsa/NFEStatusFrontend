@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewEncapsulation } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 
-import { LazyLoadEvent } from 'primeng/api';
+import { LazyLoadEvent, ConfirmationService } from 'primeng/api';
 
 import EnumAuthorizerResource from "./resources/EnumAuthorizerResource";
 import NFEStatusSnapshotResource from "./resources/NFEStatusSnapshotResource";
@@ -18,14 +19,17 @@ import QueryOption, { queryByDistinctAuthorizerAndLatestCapture, queryTreatUnkno
 @Component({
   selector: 'app-root',
   templateUrl: './NFEStatusPage.component.html',
-  styleUrls: ['./NFEStatusPage.component.sass']
+  styleUrls: ['./NFEStatusPage.component.sass'],
+  encapsulation: ViewEncapsulation.None
 })
 export class NFEStatusPageComponent implements OnInit {
-  public title = 'nfestatus';
-
   public authorizers: EnumAuthorizerDTO[];
   public services: EnumServiceDTO[];
-  public queryOptions: QueryOption[];
+  public initialized = false;
+  public queryOptions: QueryOption[] = [
+    queryByDistinctAuthorizerAndLatestCapture,
+    queryTreatUnknownNFEStatusAsOffline
+  ];
 
   public loadedNFEStatusSnapshots: NFEStatusSnapshotDTO[];
   public totalNFEStatusSnapshotsRecords: number;
@@ -34,74 +38,64 @@ export class NFEStatusPageComponent implements OnInit {
 
   public selectedCaptureMoment: Date;
   public selectedAuthorizers: EnumAuthorizerDTO[];
-  public selectedMostUnavailableServices: EnumServiceDTO[];
-  public selectedQueryOptions:  QueryOption[];
+  public selectedMostUnavailableServices: EnumServiceDTO[] = [];
+  public selectedQueryOptions = Array.from(this.queryOptions);
 
-  public isPaginationLoading: boolean;
+  public isPaginationLoading = true;
   public tableVisible = true;
   public tableRowsSize = 10;
 
   public constructor(private enumAuthorizerResource: EnumAuthorizerResource,
                      private nfeStatusSnapshotResource: NFEStatusSnapshotResource,
-                     private enumServiceResource: EnumServiceResource) {
+                     private enumServiceResource: EnumServiceResource,
+                     private confirmationService: ConfirmationService) {
 
   }
 
   public ngOnInit() : void {
-    this.queryOptions = [
-      queryByDistinctAuthorizerAndLatestCapture,
-      queryTreatUnknownNFEStatusAsOffline
-    ];
-
-    this.selectedQueryOptions = Array.from(this.queryOptions);
-
-    this.enumAuthorizerResource.findAll((dtos: EnumAuthorizerDTO[]) => {
-      this.authorizers = Array.from(dtos);
-      this.selectedAuthorizers = Array.from(dtos);
-
-      this.refreshTable();
-    });
-
-    this.enumServiceResource.findAll((dtos: EnumServiceDTO[]) => {
-      this.services = dtos;
-    });
-
-    this.selectedMostUnavailableServices = [];
+    this.enumAuthorizerResource.findAll(
+      this.handleAuthorizerInitFindAllResponse.bind(this),
+      this.displayNetworkErrorDialog.bind(this)
+    );
   }
 
   public queryByAuthorizersAndDatePaginated(lazyLoadEvent: LazyLoadEvent) : void {
-    let filter = new NFEStatusSnapshotFilterDTO();
-    filter.authorizers = this.selectedAuthorizers;
-    filter.captureMoment = this.selectedCaptureMoment;
-    filter.page = this.resolveWantedPage(lazyLoadEvent);
-    filter.rows = lazyLoadEvent.rows;
-    filter.distinctByAuthorizerLatest = this.isQueryOptionSelected(queryByDistinctAuthorizerAndLatestCapture);;
-
-    this.isPaginationLoading = true;
-
-    this.nfeStatusSnapshotResource.queryByAuthorizersAndDatePaginated(filter, (result: NFEStatusSnapshotFilterResultDTO) => {
-      this.loadedNFEStatusSnapshots = result.results;
-      this.totalNFEStatusSnapshotsRecords = result.totalRecords;
-
-      this.isPaginationLoading = false;
-    });
+    if (this.initialized) {
+      let filter = new NFEStatusSnapshotFilterDTO();
+      filter.authorizers = this.selectedAuthorizers;
+      filter.captureMoment = this.selectedCaptureMoment;
+      filter.page = this.resolveWantedPage(lazyLoadEvent);
+      filter.rows = lazyLoadEvent.rows;
+      filter.distinctByAuthorizerLatest = this.isQueryOptionSelected(queryByDistinctAuthorizerAndLatestCapture);;
+  
+      this.isPaginationLoading = true;
+  
+      this.nfeStatusSnapshotResource.queryByAuthorizersAndDatePaginated(filter, (result: NFEStatusSnapshotFilterResultDTO) => {
+        this.loadedNFEStatusSnapshots = result.results;
+        this.totalNFEStatusSnapshotsRecords = result.totalRecords;
+  
+        this.isPaginationLoading = false;
+      });
+    }
   }
 
   public queryByMostUnavailableServicesPaginated (lazyLoadEvent: LazyLoadEvent) : void {
-    let filter = new NFEStatusSnapshotFilterMostUnavailableDTO();
-    filter.page = this.resolveWantedPage(lazyLoadEvent);
-    filter.rows = lazyLoadEvent.rows;
-    filter.services = this.selectedMostUnavailableServices;
-    filter.treatUnknownStatusAsOffline = this.isQueryOptionSelected(queryTreatUnknownNFEStatusAsOffline);
-
-    this.isPaginationLoading = true;
-
-    this.nfeStatusSnapshotResource.queryByMostUnavailableServicesPaginated(filter, (result: NFEStatusSnapshotFilterMostUnavailableResultDTO) => {
-      this.loadedNFEStatusSnapshotMostUnavailables = result.results;
-      this.totalNFEStatusSnapshotMostUnavailableRecords = result.totalRecords;
-
-      this.isPaginationLoading = false;
-    });
+    if (this.initialized) {
+      let filter = new NFEStatusSnapshotFilterMostUnavailableDTO();
+      filter.page = this.resolveWantedPage(lazyLoadEvent);
+      filter.rows = lazyLoadEvent.rows;
+      filter.services = this.selectedMostUnavailableServices;
+      filter.treatUnknownStatusAsOffline = this.isQueryOptionSelected(queryTreatUnknownNFEStatusAsOffline);
+  
+      this.isPaginationLoading = true;
+  
+      this.nfeStatusSnapshotResource.queryByMostUnavailableServicesPaginated(filter, (result: NFEStatusSnapshotFilterMostUnavailableResultDTO) => {
+        this.loadedNFEStatusSnapshotMostUnavailables = result.results;
+        this.totalNFEStatusSnapshotMostUnavailableRecords = result.totalRecords;
+  
+        this.isPaginationLoading = false;
+      });
+    }
   };
 
   public shouldDisplayMostUnavailableServicesTable() : boolean  {
@@ -111,6 +105,11 @@ export class NFEStatusPageComponent implements OnInit {
   public shouldDisableAllFields() : boolean {
     return this.isPaginationLoading;
   };
+
+  public refreshTable() : void {
+    this.tableVisible = false;
+    setTimeout(() => this.tableVisible = true, 0);
+  }
 
   private resolveWantedPage(lazyLoadEvent: LazyLoadEvent) {
     let wantedPage = 0;
@@ -122,12 +121,36 @@ export class NFEStatusPageComponent implements OnInit {
     return wantedPage;
   }
 
-  public refreshTable() : void {
-    this.tableVisible = false;
-    setTimeout(() => this.tableVisible = true, 0);
-  }
-
   private isQueryOptionSelected(queryOption : QueryOption) : boolean {
     return this.selectedQueryOptions.includes(queryOption);
+  }
+
+  private handleAuthorizerInitFindAllResponse(dtos: EnumAuthorizerDTO[]) : void {
+    this.authorizers = Array.from(dtos);
+    this.selectedAuthorizers = Array.from(dtos);
+
+    this.enumServiceResource.findAll(
+      this.handleServiceInitFindAllResponse.bind(this),
+      this.displayNetworkErrorDialog.bind(this)
+    );
+  }
+
+  private handleServiceInitFindAllResponse(dtos: EnumServiceDTO[]) : void {
+    this.services = Array.from(dtos);
+
+    this.initialized = true;
+    this.refreshTable();
+  }
+
+  private displayNetworkErrorDialog(error: HttpErrorResponse) : void {
+    this.isPaginationLoading = false;
+
+    this.confirmationService.confirm({
+      message: "Não foi possível conectar-se ao servidor de Status NF-e (" + error.status + " " + error.statusText + ")",
+      accept: () => { location.reload() },
+      acceptLabel: "Tentar novamente",
+      acceptIcon: "pi pi-refresh",
+      rejectVisible: false
+    });
   }
 }

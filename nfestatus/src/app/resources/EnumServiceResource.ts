@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 
 import AbstractResource from "./AbstractResource";
@@ -12,11 +12,16 @@ export default class EnumServiceResource extends AbstractResource {
         super(httpClient);
     }
 
-    public findAll(callback: (r: EnumServiceDTO[]) => void) : void {
+    public findAll(callback: (r: EnumServiceDTO[]) => void,
+                   errHandler: (r: HttpErrorResponse) => void) : void {
+
         const FIND_ALL_ENDPOINT = "/service/listall";
 
-        this.GET(FIND_ALL_ENDPOINT).subscribe((data: EnumServiceDTO[]) => {
-            callback(data);
-        });
+        this.GET(FIND_ALL_ENDPOINT)
+            .subscribe((data: EnumServiceDTO[]) => {
+                callback(data);
+            },
+            errHandler
+        );
     }
 }

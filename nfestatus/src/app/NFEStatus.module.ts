@@ -8,6 +8,7 @@ import { NFEStatusPageComponent } from './NFEStatusPage.component';
 import EnumAuthorizerDTOPipe from './pipes/EnumAuthorizerDTO.pipe';
 import EnumNFEStatusDTOPipe from "./pipes/EnumNFEStatusDTO.pipe";
 import EnumServiceDTOPipe from "./pipes/EnumServiceDTO.pipe";
+import NFEAverageTimePipe from "./pipes/NFEAverageTime.pipe";
 
 import { TableModule } from 'primeng/table';
 import { InputTextModule } from 'primeng/inputtext';
@@ -15,13 +16,16 @@ import { CalendarModule } from 'primeng/calendar';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { FormsModule } from '@angular/forms';
 import { CheckboxModule } from 'primeng/checkbox';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ConfirmationService } from 'primeng/api';
 
 @NgModule({
   declarations: [
     NFEStatusPageComponent,
     EnumAuthorizerDTOPipe,
     EnumNFEStatusDTOPipe,
-    EnumServiceDTOPipe
+    EnumServiceDTOPipe,
+    NFEAverageTimePipe
   ],
   imports: [
     BrowserModule,
@@ -33,9 +37,10 @@ import { CheckboxModule } from 'primeng/checkbox';
     BrowserAnimationsModule,
     HttpClientModule,
     CheckboxModule,
-    CommonModule
+    CommonModule,
+    ConfirmDialogModule
   ],
-  providers: [],
+  providers: [ConfirmationService],
   bootstrap: [NFEStatusPageComponent]
 })
 

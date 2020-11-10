@@ -1,9 +1,9 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
-export default abstract class AbstractResource {
-    private API_ADDRESS = "http://localhost:8080";
+import { environment } from '../../environments/environment';
 
+export default abstract class AbstractResource {
     private httpClient: HttpClient;
 
     constructor(httpClient: HttpClient) {
@@ -19,7 +19,7 @@ export default abstract class AbstractResource {
     }
 
     private buildURL(endpoint: string) : string {
-        let url = this.API_ADDRESS;
+        let url = environment.API_ADDRESS;
 
         if (!endpoint.startsWith("/")) {
             url += "/";

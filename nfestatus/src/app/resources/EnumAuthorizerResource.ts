@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 
 import AbstractResource from "./AbstractResource";
@@ -12,11 +12,16 @@ export default class EnumAuthorizerResource extends AbstractResource {
         super(httpClient);
     }
 
-    public findAll(callback: (r: EnumAuthorizerDTO[]) => void) : void {
+    public findAll(callback: (r: EnumAuthorizerDTO[]) => void,
+                   errHandler: (r: HttpErrorResponse) => void) : void {
+
         const FIND_ALL_ENDPOINT = "/authorizer/listall";
 
-        this.GET(FIND_ALL_ENDPOINT).subscribe((data: EnumAuthorizerDTO[]) => {
-            callback(data);
-        });
+        this.GET(FIND_ALL_ENDPOINT)
+            .subscribe((data: EnumAuthorizerDTO[]) => {
+                callback(data);
+            }, 
+            errHandler
+        );
     }
 }
